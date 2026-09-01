@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+:root {
+  --sidebar-bg: #ffffff;
+  --sidebar-hover: #f1f5f9;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+}
+
+/* Redondeado suave en tarjetas, botones e inputs */
+.bg-white,
+button,
+input,
+select,
+textarea {
+  border-radius: 6px;
+}
+
+/* Sin redondeo en sidebar, header y modales */
+aside,
+header,
+.fixed.inset-0 > div {
+  border-radius: 0 !important;
+}
+
