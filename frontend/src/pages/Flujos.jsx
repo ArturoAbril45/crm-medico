@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getFlujos, createFlujo, updateFlujo, deleteFlujo } from '../services/api'
 import { Plus, FolderOpen, Search, ChevronDown, Link, Zap, MoreVertical, Trash2, Pencil } from 'lucide-react'
@@ -26,6 +27,7 @@ const emptyForm = { nombre: '', descripcion: '', activo: true }
 
 export default function Flujos() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [busqueda, setBusqueda] = useState('')
@@ -34,13 +36,17 @@ export default function Flujos() {
   const [menuAbierto, setMenuAbierto] = useState(null)
 
   const { data } = useQuery({ queryKey: ['flujos'], queryFn: () => getFlujos().then(r => r.data) })
-  const mutCreate = useMutation({ mutationFn: createFlujo, onSuccess: () => { qc.invalidateQueries(['flujos']); setModal(null) } })
+  const mutCreate = useMutation({
+    mutationFn: createFlujo,
+    onSuccess: (res) => { qc.invalidateQueries(['flujos']); setModal(null); navigate(`/flujos/${res.data.id}/constructor`) },
+  })
   const mutUpdate = useMutation({ mutationFn: ({ id, data }) => updateFlujo(id, data), onSuccess: () => { qc.invalidateQueries(['flujos']); setModal(null) } })
   const mutDelete = useMutation({ mutationFn: deleteFlujo, onSuccess: () => qc.invalidateQueries(['flujos']) })
 
   const flujos = Array.isArray(data) ? data : []
   const filtrados = flujos.filter(f => f.nombre.toLowerCase().includes(busqueda.toLowerCase()))
   const carpetasVista = mostrarMas ? carpetas : carpetas.slice(0, 9)
+  const flujoBienvenida = flujos.find(f => f.nombre.toLowerCase().includes('bienvenida')) ?? flujos[0]
 
   const openNew = () => { setForm(emptyForm); setModal('nuevo') }
   const openEdit = (f) => { setForm({ nombre: f.nombre, descripcion: f.descripcion ?? '', activo: f.activo }); setModal(f) }
@@ -78,17 +84,17 @@ export default function Flujos() {
         {estandarOpen && (
           <div className="flex gap-3 flex-wrap">
             {/* Flujo bienvenida — card sólida */}
-            <div className="bg-white border border-slate-200 shadow-sm p-4 min-w-48 relative">
-              <p className="text-xs text-indigo-500 font-medium mb-1">Flujo de bienvenida</p>
-              <p className="text-sm font-semibold text-slate-800">Bienvenida Clínica São Paulo</p>
-              <button className="absolute top-3 right-3 text-slate-300 hover:text-slate-500">
-                <MoreVertical size={14} />
-              </button>
-            </div>
+            {flujoBienvenida && (
+              <div onClick={() => navigate(`/flujos/${flujoBienvenida.id}/constructor`)}
+                className="bg-white border border-slate-200 shadow-sm p-4 min-w-48 relative cursor-pointer hover:border-indigo-300 transition-colors">
+                <p className="text-xs text-indigo-500 font-medium mb-1">Flujo de bienvenida</p>
+                <p className="text-sm font-semibold text-slate-800">{flujoBienvenida.nombre}</p>
+              </div>
+            )}
 
-            {/* Flujos vacíos — borde punteado */}
+            {/* Flujos vacíos — borde punteado, crean el flujo y abren el editor */}
             {estandarVacios.map(nombre => (
-              <button key={nombre}
+              <button key={nombre} onClick={() => mutCreate.mutate({ nombre, descripcion: '' })}
                 className="border-2 border-dashed border-indigo-300 text-indigo-500 hover:border-indigo-400 hover:bg-indigo-50 transition-colors px-6 py-4 text-sm font-medium min-w-48">
                 {nombre}
               </button>
@@ -144,8 +150,9 @@ export default function Flujos() {
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtrados.map(f => (
-                <tr key={f.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-4 py-3">
+                <tr key={f.id} onClick={() => navigate(`/flujos/${f.id}/constructor`)}
+                  className="hover:bg-slate-50 transition-colors cursor-pointer">
+                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                     <input type="checkbox" className="w-4 h-4 accent-indigo-600" />
                   </td>
                   <td className="px-2 py-3 font-medium text-slate-800">{f.nombre}</td>
@@ -160,7 +167,7 @@ export default function Flujos() {
                   <td className="px-4 py-3 text-slate-500">
                     {new Date(f.updated_at ?? f.created_at).toLocaleDateString('es-BO', { day:'2-digit', month:'2-digit', year:'numeric' })}
                   </td>
-                  <td className="px-4 py-3 relative">
+                  <td className="px-4 py-3 relative" onClick={e => e.stopPropagation()}>
                     <button onClick={e => { e.stopPropagation(); setMenuAbierto(menuAbierto === f.id ? null : f.id) }}
                       className="p-1 text-slate-300 hover:text-slate-600 transition-colors">
                       <MoreVertical size={15} />

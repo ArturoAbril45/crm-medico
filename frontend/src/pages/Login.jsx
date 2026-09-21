@@ -13,8 +13,7 @@ export default function Login() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    await new Promise(r => setTimeout(r, 400))
-    const ok = login(form.user, form.password)
+    const ok = await login(form.user, form.password)
     if (!ok) setError('Usuario o contraseña incorrectos')
     setLoading(false)
   }
@@ -55,7 +54,7 @@ export default function Login() {
         <div className="bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
           {/* Logo */}
           <div className="flex flex-col items-center mb-8">
-            <img src="/logo-clinica.png" alt="MedAdvance OS" className="h-24 w-auto object-contain mb-3" />
+            <img src="/logo-clinica.png" alt="MedAdvance360" className="h-24 w-auto object-contain mb-3" />
             <p className="text-sm text-slate-400 mt-0.5">Ingresa a tu cuenta</p>
           </div>
 
@@ -119,7 +118,7 @@ export default function Login() {
 
         </div>
 
-        <p className="text-center text-slate-500 text-xs mt-6">© 2024 Clínica São Paulo · CRM Médico</p>
+        <p className="text-center text-slate-500 text-xs mt-6">© 2024 MedAdvance360 · CRM Médico</p>
       </div>
     </div>
   )

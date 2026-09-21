@@ -26,7 +26,7 @@ function Conexion() {
         <div className="flex-1">
           <p className="font-semibold text-slate-800">Automatización está activa</p>
           <p className="text-sm text-slate-600 mt-0.5">
-            El número de WhatsApp <span className="text-indigo-600 font-medium">+591 75136899</span> está conectado a <strong>Clínica São Paulo</strong>
+            El número de WhatsApp <span className="text-indigo-600 font-medium">+591 75136899</span> está conectado a <strong>MedAdvance360</strong>
           </p>
           <p className="text-xs text-slate-500 mt-2">
             Su WhatsApp fue conectado con éxito. La automatización continuará funcionando incluso con el celular apagado.
@@ -42,7 +42,7 @@ function Conexion() {
 
 function Empresa() {
   const [form, setForm] = useState({
-    nombre: 'Clínica São Paulo', email: 'contacto@clinicasaopaulo.com',
+    nombre: 'MedAdvance360', email: 'contacto@medadvance360.com',
     telefono: '+591 75136899', ciudad: 'Santa Cruz de la Sierra', pais: 'Bolivia',
     descripcion: 'Clínica especializada en cirugía estética y medicina estética.'
   })

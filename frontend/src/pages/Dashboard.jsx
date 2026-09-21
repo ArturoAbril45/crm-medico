@@ -125,7 +125,7 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-slate-800">
           ¡Bienvenido, {nombreCorto}!
         </h1>
-        <p className="text-slate-500 text-sm mt-0.5">Espacio de trabajo — Clínica São Paulo</p>
+        <p className="text-slate-500 text-sm mt-0.5">Espacio de trabajo — MedAdvance360</p>
       </div>
 
       {/* KPIs */}

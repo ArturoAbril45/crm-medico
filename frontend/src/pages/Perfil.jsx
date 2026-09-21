@@ -15,7 +15,7 @@ export default function Perfil() {
   const [showPass, setShowPass] = useState(false)
   const [form, setForm] = useState({
     nombre: session?.nombre ?? '',
-    email: session?.user === 'admin' ? 'admin@clinicasaopaulo.com' : 'doctor@clinicasaopaulo.com',
+    email: session?.user === 'admin' ? 'admin@medadvance360.com' : 'doctor@medadvance360.com',
     telefono: '+591 70000001',
     idioma: 'ES',
     password: '',
@@ -45,7 +45,7 @@ export default function Perfil() {
           </div>
           <div className="flex-1">
             <p className="text-lg font-bold text-slate-800">{session?.nombre}</p>
-            <p className="text-sm text-slate-500 capitalize">{session?.rol} — Clínica São Paulo</p>
+            <p className="text-sm text-slate-500 capitalize">{session?.rol} — MedAdvance360</p>
             <p className="text-xs text-slate-400 mt-0.5">ID: {session?.user}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
