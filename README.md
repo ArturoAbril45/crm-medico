@@ -154,7 +154,7 @@ El backend, en ese webhook: fija la compañia (multi-tenant), identifica o crea 
 
 ### Menus interactivos (botones y listas)
 
-El archivo `whatsapp-service/baileys-buttons.cjs` arma los menus interactivos usando el formato InteractiveMessage con NativeFlow de WhatsApp (botones de tipo quick_reply y listas de tipo single_select), enviados con `relayMessage`. Este metodo se usa porque el formato antiguo de botones ya no lo respeta WhatsApp. Ademas, el backend incluye el listado de opciones tambien en texto numerado dentro del mismo mensaje, para que funcione aunque el telefono no renderice el menu.
+La integracion con WhatsApp se realiza a traves del servicio dedicado `whatsapp-service`, que envia y recibe mensajes y menus interactivos (botones y listas). Para un entorno de produccion, la via recomendada es la API oficial de WhatsApp Business (Meta Cloud API), que soporta de forma nativa los menus interactivos.
 
 ---
 
