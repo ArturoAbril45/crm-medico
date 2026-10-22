@@ -7,19 +7,22 @@
   --accent-light: #818cf8;
 }
 
-/* Redondeado suave en tarjetas, botones e inputs */
-.bg-white,
-button,
-input,
-select,
-textarea {
-  border-radius: 6px;
-}
+@layer base {
+  /* Redondeado suave por defecto en tarjetas, botones e inputs — una clase
+     rounded-* explícita de Tailwind (como rounded-[28px] del sidebar) sigue
+     ganando, porque las utilities de Tailwind viven en una capa posterior. */
+  .bg-white,
+  button,
+  input,
+  select,
+  textarea {
+    border-radius: 6px;
+  }
 
-/* Sin redondeo en sidebar, header y modales */
-aside,
-header,
-.fixed.inset-0 > div {
-  border-radius: 0 !important;
+  /* Sin redondeo en header y modales */
+  header,
+  .fixed.inset-0 > div {
+    border-radius: 0 !important;
+  }
 }
 

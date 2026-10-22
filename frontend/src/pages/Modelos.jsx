@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModuleLoader from '../components/ModuleLoader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getModelosMensajes, createModeloMensaje, updateModeloMensaje, deleteModeloMensaje } from '../services/api'
 import { LayoutTemplate, Plus, Pencil, Trash2, Search, Copy } from 'lucide-react'
@@ -66,7 +67,7 @@ export default function Modelos() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /></div>
+        <ModuleLoader />
       ) : filtrados.length === 0 ? (
         <div className="bg-white border border-slate-100 rounded-2xl py-20 text-center text-slate-400">
           <LayoutTemplate size={40} className="mx-auto mb-3 opacity-20" />

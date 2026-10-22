@@ -1,0 +1,19 @@
+{
+  "name": "med-advance-whatsapp-service",
+  "version": "1.0.0",
+  "description": "Servicio Node.js persistente que mantiene la conexion real con WhatsApp (via Baileys) para Med-Advance",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "pino": "^9.4.0",
+    "qrcode": "^1.5.4"
+  }
+}

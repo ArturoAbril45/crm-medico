@@ -1,27 +1,36 @@
 import { createContext, useContext, useState, useCallback } from 'react'
+import { login as apiLogin, logout as apiLogout } from '../services/api'
 
 const AuthContext = createContext(null)
 
-const USERS = [
-  { user: 'admin', password: 'clinica2024', nombre: 'Administrador', rol: 'admin' },
-  { user: 'doctor', password: 'doctor123', nombre: 'Dr. Ramón Rojas', rol: 'doctor' },
-]
+function mapUser(user) {
+  return {
+    id: user.id, nombre: user.name, email: user.email, rol: user.rol?.nombre ?? '', permisos: user.permisos ?? [],
+    esSuperAdmin: !!user.es_super_admin,
+  }
+}
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(() => {
     try { return JSON.parse(localStorage.getItem('crm_session')) } catch { return null }
   })
 
-  const login = useCallback((user, password) => {
-    const found = USERS.find(u => u.user === user && u.password === password)
-    if (!found) return false
-    const s = { nombre: found.nombre, rol: found.rol, user: found.user }
-    localStorage.setItem('crm_session', JSON.stringify(s))
-    setSession(s)
-    return true
+  const login = useCallback(async (email, password) => {
+    try {
+      const { data } = await apiLogin(email, password)
+      const s = mapUser(data.user)
+      localStorage.setItem('crm_token', data.token)
+      localStorage.setItem('crm_session', JSON.stringify(s))
+      setSession(s)
+      return true
+    } catch {
+      return false
+    }
   }, [])
 
   const logout = useCallback(() => {
+    apiLogout().catch(() => {})
+    localStorage.removeItem('crm_token')
     localStorage.removeItem('crm_session')
     setSession(null)
   }, [])

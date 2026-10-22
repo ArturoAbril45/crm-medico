@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModuleLoader from '../components/ModuleLoader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCitas, createCita, updateCita, deleteCita, getPacientes, getProcedimientos } from '../services/api'
 import { Plus, Pencil, Trash2, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -130,7 +131,7 @@ export default function Citas() {
       ) : (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
           {isLoading ? (
-            <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /></div>
+            <ModuleLoader />
           ) : (
             <table className="w-full text-sm">
               <thead><tr className="bg-slate-50 text-slate-500 text-left border-b border-slate-100">

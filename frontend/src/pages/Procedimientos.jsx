@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import ModuleLoader from '../components/ModuleLoader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getProcedimientos, createProcedimiento, updateProcedimiento, deleteProcedimiento } from '../services/api'
 import { Plus, Pencil, Trash2, Stethoscope } from 'lucide-react'
@@ -42,7 +43,7 @@ export default function Procedimientos() {
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" /></div>
+        <ModuleLoader />
       ) : (
         <div className="space-y-6">
           {Object.entries(grouped).map(([cat, items]) => (

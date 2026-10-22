@@ -2,8 +2,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Flujo, Bloque};
+use App\Models\{Flujo, Bloque, BloqueEdge};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class FlujoController extends Controller {
     public function index() {
@@ -17,15 +19,16 @@ class FlujoController extends Controller {
         // Crear bloque inicial automáticamente
         Bloque::create([
             'flujo_id' => $flujo->id,
+            'client_id' => (string) Str::uuid(),
             'tipo' => 'inicio',
             'pos_x' => 50, 'pos_y' => 300,
             'config' => ['titulo' => 'Inicio del flujo'],
         ]);
-        return response()->json($flujo->load('bloques'), 201);
+        return response()->json($flujo->load('bloques', 'edges'), 201);
     }
 
     public function show(Flujo $flujo) {
-        return $flujo->load('bloques');
+        return $flujo->load('bloques', 'edges');
     }
 
     public function update(Request $request, Flujo $flujo) {
@@ -33,6 +36,7 @@ class FlujoController extends Controller {
             'nombre' => 'sometimes|string',
             'descripcion' => 'nullable|string',
             'activo' => 'sometimes|boolean',
+            'carpeta_id' => 'sometimes|nullable|exists:carpetas_flujo,id',
         ]));
         return response()->json($flujo);
     }
@@ -42,13 +46,46 @@ class FlujoController extends Controller {
         return response()->json(['message' => 'Flujo eliminado']);
     }
 
-    public function guardarBloques(Request $request, Flujo $flujo) {
-        $bloques = $request->validate(['bloques' => 'required|array'])['bloques'];
+    public function guardarFlujo(Request $request, Flujo $flujo) {
+        $data = $request->validate([
+            'bloques' => 'required|array',
+            'bloques.*.client_id' => 'required|string',
+            'bloques.*.tipo' => 'required|string',
+            'bloques.*.pos_x' => 'required|numeric',
+            'bloques.*.pos_y' => 'required|numeric',
+            'bloques.*.config' => 'nullable|array',
+            'edges' => 'nullable|array',
+            'edges.*.from_client_id' => 'required|string',
+            'edges.*.to_client_id' => 'required|string',
+            'edges.*.from_handle' => 'nullable|string',
+            'edges.*.label' => 'nullable|string',
+        ]);
 
-        $flujo->bloques()->delete();
-        foreach ($bloques as $b) {
-            Bloque::create(array_merge($b, ['flujo_id' => $flujo->id]));
-        }
-        return response()->json(['message' => 'Flujo guardado', 'bloques' => $flujo->bloques]);
+        DB::transaction(function () use ($data, $flujo) {
+            $flujo->bloques()->delete();
+            $flujo->edges()->delete();
+
+            foreach ($data['bloques'] as $b) {
+                Bloque::create([
+                    'flujo_id' => $flujo->id,
+                    'client_id' => $b['client_id'],
+                    'tipo' => $b['tipo'],
+                    'pos_x' => $b['pos_x'],
+                    'pos_y' => $b['pos_y'],
+                    'config' => $b['config'] ?? null,
+                ]);
+            }
+            foreach ($data['edges'] ?? [] as $e) {
+                BloqueEdge::create([
+                    'flujo_id' => $flujo->id,
+                    'from_client_id' => $e['from_client_id'],
+                    'to_client_id' => $e['to_client_id'],
+                    'from_handle' => $e['from_handle'] ?? null,
+                    'label' => $e['label'] ?? null,
+                ]);
+            }
+        });
+
+        return response()->json(['message' => 'Flujo guardado', 'flujo' => $flujo->load('bloques', 'edges')]);
     }
 }

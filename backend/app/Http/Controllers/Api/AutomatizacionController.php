@@ -16,7 +16,7 @@ class AutomatizacionController extends Controller {
             'flujo_id'     => 'nullable|exists:flujos,id',
             'tipo'         => 'required|in:palabra_clave,evento,horario',
             'palabra_clave'=> 'nullable|string',
-            'condicion'    => 'nullable|in:contiene,es_igual,empieza_con',
+            'condicion'    => 'nullable|in:contiene,es_igual,empieza_con,cualquiera',
             'activo'       => 'nullable|boolean',
         ]);
         return response()->json(Automatizacion::create($data)->load('flujo'), 201);

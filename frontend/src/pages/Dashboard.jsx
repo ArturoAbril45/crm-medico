@@ -1,99 +1,541 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import ModuleLoader from '../components/ModuleLoader'
 import { dashboard } from '../services/api'
 import { useAuth } from '../context/AuthContext'
-import {
-  Users, Calendar, DollarSign, MessageSquare,
-  TrendingUp, TrendingDown, Clock, CheckCircle2,
-  Bot, ThumbsUp, BarChart3, Activity
-} from 'lucide-react'
+import { Users, CornerUpLeft, MessageSquareX, ChevronUp, Info, TrendingUp, TrendingDown, CalendarDays, Clock, Stethoscope, ShieldCheck, DollarSign, BarChart3, CheckCircle2 } from 'lucide-react'
 
-const estadoColor = {
-  confirmada: 'bg-green-100 text-green-700',
-  pendiente: 'bg-amber-100 text-amber-700',
-  realizada: 'bg-blue-100 text-blue-700',
-  cancelada: 'bg-red-100 text-red-700',
-  no_asistio: 'bg-slate-100 text-slate-500',
-}
-
-const barColor = {
-  realizada: 'bg-green-500',
-  confirmada: 'bg-indigo-500',
-  pendiente: 'bg-amber-400',
-  cancelada: 'bg-red-400',
-  no_asistio: 'bg-slate-300',
-}
-
-// Datos de gestión de chat simulados (meses)
-const mesesChat = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago']
-const datosConversaciones = [320, 410, 380, 520, 490, 610, 720, 1922]
-const datosChatbot = [310, 400, 370, 505, 480, 600, 710, 1874]
-
-function KPICard({ icon: Icon, label, value, sub, color = 'indigo' }) {
-  const colors = {
-    indigo: 'bg-indigo-50 text-indigo-600',
-    green: 'bg-green-50 text-green-600',
-    amber: 'bg-amber-50 text-amber-600',
-    rose: 'bg-rose-50 text-rose-600',
-  }
+function Toggle({ options, value, onChange, small }) {
+  const i = options.indexOf(value)
   return (
-    <div className="bg-white p-5 border border-slate-100 shadow-sm">
-      <div className="flex items-start justify-between mb-3">
-        <div className={`p-2.5 ${colors[color]}`}>
-          <Icon size={20} />
-        </div>
-      </div>
-      <p className="text-2xl font-bold text-slate-800 tabular-nums">{value}</p>
-      <p className="text-sm text-slate-500 mt-0.5">{label}</p>
-      {sub && <div className="text-xs text-slate-400 mt-1">{sub}</div>}
+    <div className={`relative flex bg-slate-100 p-0.5 rounded-md font-medium ${small ? 'text-[11px]' : 'text-xs'}`}>
+      <span
+        className="absolute top-0.5 bottom-0.5 rounded-md bg-slate-900 transition-all duration-200 ease-out"
+        style={{ width: `${100 / options.length}%`, left: `${(i * 100) / options.length}%` }}
+      />
+      {options.map(opt => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={`relative z-10 flex-1 whitespace-nowrap px-3 ${small ? 'py-1' : 'py-1.5'} transition-colors duration-200 ${
+            opt === value ? 'text-white' : 'text-slate-500 hover:text-slate-700'
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
     </div>
   )
 }
 
-function GestionChat() {
-  const maxVal = Math.max(...datosConversaciones)
+function EmptyChart() {
+  return (
+    <div className="relative h-52 w-full">
+      <svg className="w-full h-full" viewBox="0 0 600 200" preserveAspectRatio="none">
+        {[0, 50, 100, 150, 199].map(y => (
+          <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="#f1f5f9" strokeWidth="1" />
+        ))}
+        <line x1="0" y1="199" x2="600" y2="199" stroke="#e2e8f0" strokeWidth="1.5" />
+      </svg>
+      <span className="absolute left-0 top-0 text-[11px] text-slate-300">—</span>
+      <span className="absolute left-0 bottom-0 text-[11px] text-slate-300">0</span>
+    </div>
+  )
+}
+
+function EmptyState({ title, sub, action }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center py-16">
+      <img src="/ghost.png" alt="" className="w-16 h-16 mb-4" />
+      <p className="font-semibold text-slate-800">{title}</p>
+      {sub && <p className="text-sm text-slate-400 mt-1 max-w-xs">{sub}</p>}
+      {action}
+    </div>
+  )
+}
+
+function GestionChat({ chat }) {
+  const sinDatos = !chat || chat.total === 0
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <h2 className="font-semibold text-slate-800">Gestión de chat</h2>
+          <Info size={16} className="text-slate-400" />
+        </div>
+        <span className="text-xs border border-slate-200 px-3 py-1.5 text-slate-500 flex items-center gap-1">
+          Este mes <ChevronUp size={12} />
+        </span>
+      </div>
+      {sinDatos ? (
+        <EmptyState
+          title="Aún no hay estadísticas de chats"
+          sub="Verás las estadísticas en cuanto tengas tus primeros chats"
+        />
+      ) : (
+        <div className="grid grid-cols-3 gap-3 py-4">
+          {[
+            { label: 'Chats este mes', value: chat.total },
+            { label: 'Asignados', value: chat.asignaciones },
+            { label: 'Cerrados', value: chat.chats_cerrados },
+          ].map(s => (
+            <div key={s.label} className="text-center">
+              <p className="text-2xl font-bold text-slate-800 tabular-nums">{s.value}</p>
+              <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Rendimiento({ chat }) {
+  const [scope, setScope] = useState('Equipo')
+  const [metric, setMetric] = useState('Mediana')
+  const stats = [
+    { icon: Users, label: 'Asignaciones', value: chat?.asignaciones ?? 0 },
+    { icon: CornerUpLeft, label: 'Primeras respuestas', value: chat?.primeras_respuestas ?? 0 },
+    { icon: MessageSquareX, label: 'Chats cerrados', value: chat?.chats_cerrados ?? 0 },
+  ]
+
   return (
     <div className="bg-white border border-slate-100 shadow-sm p-5">
       <div className="flex items-center justify-between mb-5">
-        <h2 className="font-semibold text-slate-800 flex items-center gap-2">
-          <BarChart3 size={16} className="text-indigo-500" /> Gestión de Chat
-        </h2>
-        <span className="text-xs border border-slate-200 px-3 py-1 text-slate-500">Este mes</span>
+        <div className="flex items-center gap-3">
+          <h2 className="font-semibold text-slate-800 text-lg">Rendimiento</h2>
+          <Toggle options={['Equipo', 'Personal']} value={scope} onChange={setScope} />
+        </div>
+        <span className="text-xs border border-slate-200 px-3 py-1.5 text-slate-500 flex items-center gap-1">
+          Este mes <ChevronUp size={12} />
+        </span>
       </div>
 
-      {/* Stats del mes */}
-      <div className="grid grid-cols-2 gap-4 mb-5">
-        <div className="p-4 bg-indigo-50">
-          <p className="text-2xl font-bold text-indigo-700 tabular-nums">1.922</p>
-          <p className="text-xs text-indigo-600 mt-0.5">Conversaciones (100%)</p>
-        </div>
-        <div className="p-4 bg-amber-50">
-          <p className="text-2xl font-bold text-amber-700 tabular-nums">1.874</p>
-          <p className="text-xs text-amber-600 mt-0.5">Chatbot respondió (98%)</p>
-        </div>
-      </div>
-
-      {/* Gráfico de barras */}
-      <div className="flex items-end gap-2 h-28">
-        {datosConversaciones.map((v, i) => (
-          <div key={i} className="flex-1 flex flex-col items-center gap-1">
-            <div className="w-full flex flex-col justify-end gap-0.5" style={{ height: '90px' }}>
-              <div className="w-full bg-indigo-500 opacity-80 transition-all"
-                style={{ height: `${(v / maxVal) * 90}px` }} title={`Conversaciones: ${v}`} />
-            </div>
-            <span className="text-xs text-slate-400">{mesesChat[i]}</span>
+      <div className="grid lg:grid-cols-2 gap-4">
+        {/* Actividad de chat */}
+        <div>
+          <p className="text-sm font-medium text-slate-600 mb-3">Actividad de chat</p>
+          <div className="grid grid-cols-3 gap-3">
+            {stats.map(({ icon: Icon, label, value }) => (
+              <div key={label} className="border border-slate-100 p-5 flex flex-col items-center text-center gap-2.5">
+                <div className="w-12 h-12 bg-slate-100 text-slate-500 flex items-center justify-center">
+                  <Icon size={24} />
+                </div>
+                <p className="text-2xl font-bold text-slate-800 tabular-nums">{value}</p>
+                <p className="text-xs text-slate-400">{label}</p>
+              </div>
+            ))}
           </div>
+        </div>
+
+        {/* Métricas de tiempo */}
+        <div>
+          <div className="flex items-center gap-2 mb-3">
+            <p className="text-sm font-medium text-slate-600">Métricas de tiempo</p>
+            <Toggle options={['Mediana', 'Promedio']} value={metric} onChange={setMetric} small />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {['Hasta la primera respuesta', 'Hasta el cierre'].map(label => (
+              <div key={label} className="border border-slate-100 p-5 flex flex-col gap-1.5">
+                <p className="text-2xl font-bold text-slate-400">–</p>
+                <p className="text-xs text-slate-400">{label}</p>
+                <svg className="w-full h-8 mt-1" viewBox="0 0 200 32" preserveAspectRatio="none">
+                  <line x1="0" y1="31" x2="200" y2="31" stroke="#f1f5f9" strokeWidth="2" />
+                </svg>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EstadisticasMiembros({ chat }) {
+  const porMiembro = chat?.por_miembro ?? []
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <h2 className="font-semibold text-slate-800">Estadísticas de chat por miembros</h2>
+        <Info size={16} className="text-slate-400" />
+      </div>
+      {porMiembro.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-center py-16">
+          <img src="/ghost.png" alt="" className="w-12 h-12 mb-4" />
+          <p className="font-semibold text-slate-800">Todavía no hay chats asignados</p>
+          <p className="text-sm text-slate-400 mt-1 max-w-xs">
+            Cuando un agente tome una conversación, va a aparecer acá
+          </p>
+        </div>
+      ) : (
+        <div className="divide-y divide-slate-100">
+          {porMiembro.map(m => (
+            <div key={m.agente_id} className="flex items-center justify-between py-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+                  {(m.agente?.name || '?')[0]?.toUpperCase()}
+                </div>
+                <p className="text-sm text-slate-700">{m.agente?.name ?? 'Agente'}</p>
+              </div>
+              <p className="text-sm font-semibold text-slate-800 tabular-nums">{m.total}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ActividadEquipo({ chat }) {
+  const legend = [
+    { color: 'bg-sky-500', label: 'Chats asignados', key: 'asignados' },
+    { color: 'bg-orange-500', label: 'Chats contestados', key: 'contestados' },
+    { color: 'bg-teal-500', label: 'Chats cerrados', key: 'cerrados' },
+  ]
+  const dias = chat?.actividad_por_dia ?? []
+  const max = Math.max(1, ...dias.flatMap(d => [d.asignados, d.contestados, d.cerrados]))
+
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-semibold text-slate-800 text-lg">Actividad de equipo</h2>
+        <span className="text-xs border border-slate-200 px-3 py-1.5 text-slate-500 flex items-center gap-1">
+          Conteo de actividades <ChevronUp size={12} />
+        </span>
+      </div>
+
+      {dias.every(d => !d.asignados && !d.contestados && !d.cerrados) ? (
+        <EmptyChart />
+      ) : (
+        <div className="h-52 w-full flex items-end justify-between gap-2 px-1">
+          {dias.map(d => (
+            <div key={d.fecha} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full flex items-end justify-center gap-0.5 h-40">
+                {legend.map(l => (
+                  <div key={l.key} className={`w-2 rounded-t ${l.color}`} style={{ height: `${(d[l.key] / max) * 100}%` }} title={`${l.label}: ${d[l.key]}`} />
+                ))}
+              </div>
+              <span className="text-[10px] text-slate-400">{new Date(d.fecha).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' })}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex items-center justify-center gap-6 mt-4 pt-4 border-t border-slate-100">
+        {legend.map(({ color, label }) => (
+          <span key={label} className="flex items-center gap-2 text-xs text-slate-500">
+            <span className={`w-2.5 h-2.5 rounded-full ${color}`} />
+            {label}
+          </span>
         ))}
       </div>
+    </div>
+  )
+}
 
-      {/* Leyenda */}
-      <div className="flex gap-4 mt-3 pt-3 border-t border-slate-100">
-        <span className="flex items-center gap-1.5 text-xs text-slate-500">
-          <span className="w-3 h-3 bg-indigo-500 opacity-80" /> Conversaciones
-        </span>
-        <span className="flex items-center gap-1.5 text-xs text-slate-500">
-          <span className="w-3 h-3 bg-amber-400" /> Chatbot respondió
+function EstadisticasPeriodo({ citas }) {
+  const porDia = citas?.por_dia ?? []
+  const max = Math.max(1, ...porDia.map(d => d.total))
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Datos</p>
+          <h2 className="font-semibold text-slate-800 text-lg">Estadísticas por período</h2>
+        </div>
+        <span className="text-xs border border-slate-200 px-3 py-1.5 text-slate-500 flex items-center gap-1">
+          Este mes <ChevronUp size={12} />
         </span>
       </div>
+
+      {porDia.length === 0 ? (
+        <EmptyChart />
+      ) : (
+        <div className="h-52 w-full flex items-end justify-between gap-2 px-1">
+          {porDia.map(d => (
+            <div key={d.fecha} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full bg-indigo-100 rounded-t" style={{ height: `${(d.total / max) * 100}%`, minHeight: d.total ? '4px' : '0' }} title={`${d.fecha}: ${d.total} citas`} />
+              <span className="text-[10px] text-slate-400">{new Date(d.fecha).toLocaleDateString('es-BO', { day: '2-digit', month: '2-digit' })}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ClinicaStats({ clinica }) {
+  const sinDatos = !clinica || (clinica.medicos_total === 0 && clinica.pacientes_reservados === 0)
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <h2 className="font-semibold text-slate-800">Panel clínico</h2>
+        <Info size={16} className="text-slate-400" />
+      </div>
+      {sinDatos ? (
+        <EmptyState
+          title="Aún no hay datos clínicos"
+          sub="Vas a ver acá médicos, pacientes reservados y citas en cuanto empieces a cargarlos"
+        />
+      ) : (
+        <>
+          <div className="grid grid-cols-4 gap-3 py-4">
+            {[
+              { label: 'Médicos', value: clinica.medicos_total },
+              { label: 'Médicos activos', value: clinica.medicos_activos },
+              { label: 'Pacientes reservados', value: clinica.pacientes_reservados },
+              { label: 'Citas este mes', value: clinica.citas_total },
+            ].map(s => (
+              <div key={s.label} className="text-center">
+                <p className="text-2xl font-bold text-slate-800 tabular-nums">{s.value}</p>
+                <p className="text-xs text-slate-400 mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-4 text-xs text-slate-500 pb-3">
+            <span className="flex items-center gap-1.5"><ShieldCheck size={13} className="text-emerald-500" /> {clinica.medicos_con_google} médico(s) con Google Calendar vinculado</span>
+            <span>·</span>
+            <span>{clinica.pacientes_sin_reserva} paciente(s) sin reserva aún</span>
+          </div>
+          {clinica.citas_por_medico?.length > 0 && (
+            <div className="border-t border-slate-100 pt-3">
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Citas por médico</p>
+              <div className="space-y-1.5">
+                {clinica.citas_por_medico.map(row => (
+                  <div key={row.medico_id} className="flex items-center justify-between text-sm">
+                    <span className="text-slate-600">
+                      {row.medico ? `Dr(a). ${row.medico.nombre} ${row.medico.apellido}` : 'Médico eliminado'}
+                      {row.medico?.especialidad && <span className="text-slate-400"> — {row.medico.especialidad}</span>}
+                    </span>
+                    <span className="font-semibold text-slate-800 tabular-nums">{row.total}</span>
+                  </div>
+                ))}
+                {clinica.citas_sin_medico > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">Sin médico asignado</span>
+                    <span className="font-semibold text-slate-500 tabular-nums">{clinica.citas_sin_medico}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function PacientesStats({ pacientes, clinica }) {
+  const sinDatos = !pacientes || pacientes.total === 0
+  const crecimiento = pacientes?.crecimiento ?? 0
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <h2 className="font-semibold text-slate-800">Pacientes</h2>
+        <Info size={16} className="text-slate-400" />
+      </div>
+      {sinDatos ? (
+        <EmptyState title="Aún no hay pacientes registrados" sub="Vas a ver acá el resumen apenas cargues el primero" />
+      ) : (
+        <div className="grid grid-cols-4 gap-3 py-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 tabular-nums">{pacientes.total}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Total</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 tabular-nums">{pacientes.activos}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Activos</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 tabular-nums">{clinica?.pacientes_reservados ?? 0}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Con reserva</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 tabular-nums flex items-center justify-center gap-1">
+              {pacientes.este_mes}
+              {crecimiento !== 0 && (
+                <span className={`text-xs font-medium flex items-center ${crecimiento > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {crecimiento > 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}{Math.abs(crecimiento)}%
+                </span>
+              )}
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">Nuevos este mes</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+const estadoLabels = { pendiente: 'Pendientes', confirmada: 'Confirmadas', realizada: 'Realizadas', cancelada: 'Canceladas', no_asistio: 'No asistió' }
+const estadoColores = { pendiente: 'bg-amber-400', confirmada: 'bg-indigo-500', realizada: 'bg-emerald-500', cancelada: 'bg-red-400', no_asistio: 'bg-slate-400' }
+
+function EstadoCitas({ citas }) {
+  const estados = citas?.estado ?? []
+  const total = estados.reduce((s, e) => s + e.total, 0)
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <h2 className="font-semibold text-slate-800 mb-3">Citas del mes por estado</h2>
+      {total === 0 ? (
+        <EmptyState title="Sin citas este mes" sub="Vas a ver el desglose apenas se agende la primera" />
+      ) : (
+        <div className="space-y-2.5">
+          {estados.map(e => (
+            <div key={e.estado}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-slate-600">{estadoLabels[e.estado] ?? e.estado}</span>
+                <span className="font-semibold text-slate-800 tabular-nums">{e.total}</span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className={`h-full ${estadoColores[e.estado] ?? 'bg-slate-400'}`} style={{ width: `${(e.total / total) * 100}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProximasCitasHoy({ proximas }) {
+  const lista = proximas ?? []
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <CalendarDays size={16} className="text-slate-400" />
+        <h2 className="font-semibold text-slate-800">Próximas citas de hoy</h2>
+      </div>
+      {lista.length === 0 ? (
+        <EmptyState title="Sin citas para hoy" sub="Las próximas citas del día van a aparecer acá" />
+      ) : (
+        <div className="space-y-2">
+          {lista.map(c => (
+            <div key={c.id} className="flex items-center justify-between px-3 py-2.5 bg-slate-50 rounded-lg text-sm">
+              <div className="flex items-center gap-2.5">
+                <Clock size={13} className="text-slate-400 shrink-0" />
+                <span className="font-medium text-slate-700">{new Date(c.fecha_hora).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}</span>
+                <span className="text-slate-600">{c.paciente?.nombre} {c.paciente?.apellido}</span>
+              </div>
+              <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                <Stethoscope size={12} />
+                {c.medico ? `Dr(a). ${c.medico.nombre} ${c.medico.apellido}` : 'Sin médico'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Ingresos({ ingresos }) {
+  const crecimiento = ingresos?.crecimiento ?? 0
+  const sinDatos = !ingresos || (!ingresos.este_mes && !ingresos.mes_anterior)
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <DollarSign size={16} className="text-slate-400" />
+        <h2 className="font-semibold text-slate-800">Ingresos</h2>
+      </div>
+      {sinDatos ? (
+        <EmptyState title="Sin ingresos registrados" sub="Vas a ver el comparativo apenas se registre el primer pago" />
+      ) : (
+        <div className="grid grid-cols-3 gap-3 py-4">
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 tabular-nums">${Number(ingresos.este_mes).toLocaleString()}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Este mes</p>
+          </div>
+          <div className="text-center">
+            <p className="text-2xl font-bold text-slate-800 tabular-nums">${Number(ingresos.mes_anterior).toLocaleString()}</p>
+            <p className="text-xs text-slate-400 mt-0.5">Mes anterior</p>
+          </div>
+          <div className="text-center">
+            <p className={`text-2xl font-bold tabular-nums flex items-center justify-center gap-1 ${crecimiento >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+              {crecimiento >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}{Math.abs(crecimiento)}%
+            </p>
+            <p className="text-xs text-slate-400 mt-0.5">vs. mes anterior</p>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CitasPorEspecialidad({ datos }) {
+  const lista = datos ?? []
+  const max = Math.max(1, ...lista.map(d => d.total))
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-3">
+        <BarChart3 size={16} className="text-slate-400" />
+        <h2 className="font-semibold text-slate-800">Citas por especialidad</h2>
+      </div>
+      {lista.length === 0 ? (
+        <EmptyState title="Sin datos por especialidad" sub="Vas a ver el desglose apenas los médicos tengan especialidad y citas" />
+      ) : (
+        <div className="space-y-2.5">
+          {lista.map(d => (
+            <div key={d.especialidad}>
+              <div className="flex items-center justify-between text-xs mb-1">
+                <span className="text-slate-600">{d.especialidad}</span>
+                <span className="font-semibold text-slate-800 tabular-nums">{d.total}</span>
+              </div>
+              <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500" style={{ width: `${(d.total / max) * 100}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CitasPorHora({ datos }) {
+  const porHora = new Map((datos ?? []).map(d => [d.hora, d.total]))
+  const horas = Array.from({ length: 24 }, (_, h) => ({ hora: h, total: porHora.get(h) ?? 0 }))
+  const max = Math.max(1, ...horas.map(h => h.total))
+  const hayDatos = horas.some(h => h.total > 0)
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <h2 className="font-semibold text-slate-800 mb-4">Horas pico (todas las citas)</h2>
+      {!hayDatos ? (
+        <EmptyChart />
+      ) : (
+        <div className="h-40 w-full flex items-end justify-between gap-0.5">
+          {horas.map(h => (
+            <div key={h.hora} className="flex-1 flex flex-col items-center gap-1" title={`${h.hora}:00 — ${h.total} citas`}>
+              <div className="w-full bg-indigo-100 rounded-t" style={{ height: `${(h.total / max) * 100}%`, minHeight: h.total ? '4px' : '0' }} />
+              {h.hora % 3 === 0 && <span className="text-[9px] text-slate-400">{h.hora}h</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function TasaAsistencia({ clinica }) {
+  const tasa = clinica?.tasa_asistencia
+  return (
+    <div className="bg-white border border-slate-100 shadow-sm p-5">
+      <div className="flex items-center gap-2 mb-2">
+        <CheckCircle2 size={16} className="text-slate-400" />
+        <h2 className="font-semibold text-slate-800">Tasa de asistencia (este mes)</h2>
+      </div>
+      {tasa === null || tasa === undefined ? (
+        <EmptyState title="Sin datos suficientes" sub="Se calcula sobre citas realizadas, canceladas y no asistidas" />
+      ) : (
+        <>
+          <p className="text-3xl font-bold text-slate-800 tabular-nums mb-3">{tasa}%</p>
+          <div className="grid grid-cols-3 gap-3 text-center text-xs">
+            <div><p className="font-semibold text-emerald-600 text-base tabular-nums">{clinica.realizadas}</p><p className="text-slate-400 mt-0.5">Realizadas</p></div>
+            <div><p className="font-semibold text-red-500 text-base tabular-nums">{clinica.no_asistio}</p><p className="text-slate-400 mt-0.5">No asistió</p></div>
+            <div><p className="font-semibold text-slate-500 text-base tabular-nums">{clinica.canceladas}</p><p className="text-slate-400 mt-0.5">Canceladas</p></div>
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -105,16 +547,7 @@ export default function Dashboard() {
     queryFn: () => dashboard().then(r => r.data)
   })
 
-  if (isLoading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
-    </div>
-  )
-
-  const d = data || {}
-  const crecimiento = d.ingresos?.crecimiento ?? 0
-  const estadosCitas = Array.isArray(d.citas?.estado) ? d.citas.estado : []
-  const totalCitasMes = d.citas?.este_mes || 1
+  if (isLoading) return <ModuleLoader />
 
   const nombreCorto = (session?.nombre ?? '').split(' ')[0]
 
@@ -125,197 +558,26 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold text-slate-800">
           ¡Bienvenido, {nombreCorto}!
         </h1>
-        <p className="text-slate-500 text-sm mt-0.5">Espacio de trabajo — Clínica São Paulo</p>
+        <p className="text-slate-500 text-sm mt-0.5">Espacio de trabajo — Med-Advance</p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
-          icon={Users}
-          label="Total Pacientes"
-          value={d.pacientes?.total ?? 0}
-          sub={`${d.pacientes?.activos ?? 0} activos`}
-          color="indigo"
-        />
-        <KPICard
-          icon={Calendar}
-          label="Citas Hoy"
-          value={d.citas?.hoy ?? 0}
-          sub={`${d.citas?.pendientes ?? 0} pendientes`}
-          color="amber"
-        />
-        <KPICard
-          icon={DollarSign}
-          label="Ingresos del Mes"
-          value={`Bs. ${Number(d.ingresos?.este_mes ?? 0).toLocaleString()}`}
-          sub={
-            <span className={`flex items-center gap-1 ${crecimiento >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-              {crecimiento >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-              {Math.abs(crecimiento).toFixed(1)}% vs mes anterior
-            </span>
-          }
-          color="green"
-        />
-        <KPICard
-          icon={MessageSquare}
-          label="Conversaciones"
-          value={d.conversaciones?.activas ?? 0}
-          sub="activas este mes"
-          color="rose"
-        />
+      <ClinicaStats clinica={data?.clinica} />
+      <PacientesStats pacientes={data?.pacientes} clinica={data?.clinica} />
+      <div className="grid md:grid-cols-2 gap-6">
+        <EstadoCitas citas={data?.citas} />
+        <ProximasCitasHoy proximas={data?.proximas_citas} />
       </div>
-
-      {/* Fila 2: Gestión de chat + citas del día */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        <GestionChat />
-
-        {/* Próximas citas de hoy */}
-        <div className="bg-white border border-slate-100 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <Clock size={16} className="text-indigo-500" /> Próximas Citas de Hoy
-          </h2>
-          {(d.proximas_citas ?? []).length === 0
-            ? <p className="text-slate-400 text-sm py-8 text-center">No hay citas programadas para hoy</p>
-            : (
-              <div className="space-y-3">
-                {d.proximas_citas.map((c, i) => (
-                  <div key={i} className="flex items-center gap-3 p-3 bg-slate-50">
-                    <div className="w-10 h-10 bg-indigo-100 flex items-center justify-center shrink-0">
-                      <span className="text-indigo-700 font-bold text-xs">
-                        {(c.paciente?.nombre ?? '?')[0]}{(c.paciente?.apellido ?? '')[0]}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">
-                        {c.paciente?.nombre} {c.paciente?.apellido}
-                      </p>
-                      <p className="text-xs text-slate-400">{c.procedimiento?.nombre ?? 'Consulta'} · {c.doctor}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-semibold text-slate-700">
-                        {new Date(c.fecha_hora).toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      <span className={`text-xs px-2 py-0.5 font-medium ${estadoColor[c.estado]}`}>
-                        {c.estado}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )
-          }
-        </div>
+      <div className="grid md:grid-cols-2 gap-6">
+        <CitasPorEspecialidad datos={data?.clinica?.citas_por_especialidad} />
+        <TasaAsistencia clinica={data?.clinica} />
       </div>
-
-      {/* Fila 3: Distribución citas + KPIs secundarios */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Citas del mes por estado */}
-        <div className="bg-white border border-slate-100 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-800 mb-4 flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-green-500" /> Citas del Mes por Estado
-          </h2>
-          {estadosCitas.length === 0
-            ? <p className="text-slate-400 text-sm">Sin citas este mes</p>
-            : (
-              <div className="space-y-3">
-                {estadosCitas.map(({ estado, total }) => {
-                  const pct = Math.round((total / totalCitasMes) * 100)
-                  return (
-                    <div key={estado}>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="capitalize text-slate-600">{estado.replace('_', ' ')}</span>
-                        <span className="font-medium text-slate-800">{total}</span>
-                      </div>
-                      <div className="h-2 bg-slate-100">
-                        <div className={`h-2 ${barColor[estado] ?? 'bg-slate-400'}`} style={{ width: `${pct}%` }} />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )
-          }
-        </div>
-
-        {/* KPIs extra */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white border border-slate-100 shadow-sm p-5">
-            <div className="p-2.5 bg-purple-50 text-purple-600 w-fit mb-3">
-              <Bot size={20} />
-            </div>
-            <p className="text-2xl font-bold text-slate-800 tabular-nums">98%</p>
-            <p className="text-sm text-slate-500 mt-0.5">Chatbot respondió</p>
-            <p className="text-xs text-slate-400 mt-1">1.874 de 1.922</p>
-          </div>
-          <div className="bg-white border border-slate-100 shadow-sm p-5">
-            <div className="p-2.5 bg-green-50 text-green-600 w-fit mb-3">
-              <ThumbsUp size={20} />
-            </div>
-            <p className="text-2xl font-bold text-slate-800 tabular-nums">4.8</p>
-            <p className="text-sm text-slate-500 mt-0.5">Satisfacción</p>
-            <p className="text-xs text-slate-400 mt-1">Promedio del mes</p>
-          </div>
-          <div className="bg-white border border-slate-100 shadow-sm p-5">
-            <div className="p-2.5 bg-amber-50 text-amber-600 w-fit mb-3">
-              <Activity size={20} />
-            </div>
-            <p className="text-2xl font-bold text-slate-800 tabular-nums">{d.citas?.este_mes ?? 0}</p>
-            <p className="text-sm text-slate-500 mt-0.5">Citas este mes</p>
-            <p className="text-xs text-slate-400 mt-1">Período actual</p>
-          </div>
-          <div className="bg-white border border-slate-100 shadow-sm p-5">
-            <div className="p-2.5 bg-rose-50 text-rose-600 w-fit mb-3">
-              <DollarSign size={20} />
-            </div>
-            <p className="text-2xl font-bold text-slate-800 tabular-nums">
-              Bs. {Number(d.ingresos?.mes_anterior ?? 0).toLocaleString()}
-            </p>
-            <p className="text-sm text-slate-500 mt-0.5">Mes anterior</p>
-            <p className="text-xs text-slate-400 mt-1">Ingresos totales</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Pacientes recientes */}
-      {(d.pacientes?.recientes ?? []).length > 0 && (
-        <div className="bg-white border border-slate-100 shadow-sm p-5">
-          <h2 className="font-semibold text-slate-800 mb-4">Pacientes Recientes</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-slate-400 border-b border-slate-100">
-                  <th className="pb-2 font-medium">Nombre</th>
-                  <th className="pb-2 font-medium">Teléfono</th>
-                  <th className="pb-2 font-medium">Estado</th>
-                  <th className="pb-2 font-medium">Fuente</th>
-                  <th className="pb-2 font-medium text-right">Total Gastado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {d.pacientes.recientes.map(p => (
-                  <tr key={p.id} className="hover:bg-slate-50">
-                    <td className="py-2.5 font-medium text-slate-800">{p.nombre} {p.apellido}</td>
-                    <td className="py-2.5 text-slate-500">{p.telefono}</td>
-                    <td className="py-2.5">
-                      <span className={`px-2 py-0.5 text-xs font-medium ${
-                        p.estado === 'activo' ? 'bg-green-100 text-green-700'
-                        : p.estado === 'potencial' ? 'bg-blue-100 text-blue-700'
-                        : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {p.estado}
-                      </span>
-                    </td>
-                    <td className="py-2.5 text-slate-500">{p.fuente}</td>
-                    <td className="py-2.5 text-right font-semibold text-slate-800 tabular-nums">
-                      Bs. {Number(p.total_gastado ?? 0).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      <Ingresos ingresos={data?.ingresos} />
+      <CitasPorHora datos={data?.clinica?.citas_por_hora} />
+      <GestionChat chat={data?.chat} />
+      <Rendimiento chat={data?.chat} />
+      <EstadisticasMiembros chat={data?.chat} />
+      <ActividadEquipo chat={data?.chat} />
+      <EstadisticasPeriodo citas={data?.citas} />
     </div>
   )
 }

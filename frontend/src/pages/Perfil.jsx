@@ -45,8 +45,8 @@ export default function Perfil() {
           </div>
           <div className="flex-1">
             <p className="text-lg font-bold text-slate-800">{session?.nombre}</p>
-            <p className="text-sm text-slate-500 capitalize">{session?.rol} — Clínica São Paulo</p>
-            <p className="text-xs text-slate-400 mt-0.5">ID: {session?.user}</p>
+            <p className="text-sm text-slate-500 capitalize">{session?.rol} — Med-Advance</p>
+            <p className="text-xs text-slate-400 mt-0.5">ID: {session?.id}</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             {estadoOptions.map(e => (

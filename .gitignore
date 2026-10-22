@@ -1,0 +1,38 @@
+# ---- Dependencias ----
+node_modules/
+**/node_modules/
+/backend/vendor/
+vendor/
+
+# ---- Entorno / secretos ----
+.env
+.env.*
+!.env.example
+*.key
+auth.json
+
+# ---- Base de datos (datos reales) ----
+*.sqlite
+*.sqlite-journal
+/backend/database/*.sqlite
+
+# ---- Laravel: storage (archivos subidos, logs, cache) y cache ----
+/backend/storage/app/*
+/backend/storage/framework/
+/backend/storage/logs/
+/backend/bootstrap/cache/*
+
+# ---- Servicio de WhatsApp (datos personales y sesion) ----
+/whatsapp-service/auth_session/
+/whatsapp-service/media_recibida/
+
+# ---- Builds ----
+/frontend/dist/
+dist/
+build/
+
+# ---- Logs y temporales ----
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db

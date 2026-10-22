@@ -58,7 +58,9 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
-            'engine' => null,
+            // Algunos hostings compartidos crean tablas en MyISAM por defecto (limite de indice de 1000 bytes).
+            // Forzamos InnoDB explicitamente para evitar el error "Specified key was too long".
+            'engine' => 'InnoDB',
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
