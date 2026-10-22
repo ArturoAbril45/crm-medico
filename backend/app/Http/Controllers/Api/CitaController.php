@@ -41,9 +41,13 @@ class CitaController extends Controller {
         $data = $request->validate(array_merge([
             'paciente_id'      => 'required|exists:pacientes,id',
             'procedimiento_id' => 'nullable|exists:procedimientos,id',
+            'medico_id'        => 'nullable|exists:medicos,id',
             'doctor'           => 'nullable|string',
             'fecha_hora'       => 'required|date',
             'duracion_min'     => 'nullable|integer|min:15',
+            'tipo_consulta'    => 'nullable|in:presencial,virtual,domicilio',
+            'ubicacion'        => 'nullable|string',
+            'motivo'           => 'nullable|string',
             'estado'           => 'nullable|in:pendiente,confirmada,realizada,cancelada,no_asistio',
             'notas'            => 'nullable|string',
             'monto'            => 'nullable|numeric|min:0',
@@ -67,9 +71,13 @@ class CitaController extends Controller {
         $data = $request->validate(array_merge([
             'paciente_id'      => 'sometimes|exists:pacientes,id',
             'procedimiento_id' => 'nullable|exists:procedimientos,id',
+            'medico_id'        => 'nullable|exists:medicos,id',
             'doctor'           => 'nullable|string',
             'fecha_hora'       => 'sometimes|date',
             'duracion_min'     => 'nullable|integer',
+            'tipo_consulta'    => 'nullable|in:presencial,virtual,domicilio',
+            'ubicacion'        => 'nullable|string',
+            'motivo'           => 'nullable|string',
             'estado'           => 'nullable|in:pendiente,confirmada,realizada,cancelada,no_asistio',
             'notas'            => 'nullable|string',
             'monto'            => 'nullable|numeric',
@@ -90,7 +98,7 @@ class CitaController extends Controller {
         $inicio = $request->inicio ?? Carbon::now()->startOfMonth()->toDateString();
         $fin = $request->fin ?? Carbon::now()->endOfMonth()->toDateString();
 
-        return Cita::with(['paciente', 'procedimiento'])
+        return Cita::with(['paciente', 'procedimiento', 'medico'])
             ->whereBetween('fecha_hora', [$inicio . ' 00:00:00', $fin . ' 23:59:59'])
             ->orderBy('fecha_hora')
             ->get();

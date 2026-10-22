@@ -26,6 +26,15 @@ class Paciente extends Model {
         'etiquetas' => 'array',
     ];
 
+    protected static function booted() {
+        static::creating(function (Paciente $paciente) {
+            if (!$paciente->numero_historia) {
+                $ultimo = static::max('id') + 1;
+                $paciente->numero_historia = 'CSP-' . str_pad($ultimo, 6, '0', STR_PAD_LEFT);
+            }
+        });
+    }
+
     public function citas() { return $this->hasMany(Cita::class); }
     public function conversaciones() { return $this->hasMany(Conversacion::class); }
     public function pagos() { return $this->hasMany(Pago::class); }

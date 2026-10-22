@@ -511,6 +511,9 @@ export default function BandejaEntrada() {
                 </button>
               )}
             </div>
+            {mutEnviar.isError && (
+              <p className="text-xs text-red-500 mt-2">{mutEnviar.error?.response?.data?.error || 'No se pudo enviar. ¿Está conectado el WhatsApp?'}</p>
+            )}
           </div>
         </div>
       ) : (

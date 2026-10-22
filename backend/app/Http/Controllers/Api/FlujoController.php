@@ -88,4 +88,63 @@ class FlujoController extends Controller {
 
         return response()->json(['message' => 'Flujo guardado', 'flujo' => $flujo->load('bloques', 'edges')]);
     }
+
+    // --- Editor de flujo (constructor): CRUD granular de bloques y conexiones ---
+
+    public function crearBloque(Request $request, Flujo $flujo) {
+        $data = $request->validate([
+            'tipo' => 'required|in:inicio,contenido,menu,condicion,accion',
+            'pos_x' => 'required|numeric',
+            'pos_y' => 'required|numeric',
+            'config' => 'nullable|array',
+        ]);
+
+        $bloque = Bloque::create([
+            'flujo_id' => $flujo->id,
+            'tipo' => $data['tipo'],
+            'pos_x' => $data['pos_x'],
+            'pos_y' => $data['pos_y'],
+            'config' => $data['config'] ?? ['titulo' => ucfirst($data['tipo'])],
+        ]);
+
+        return response()->json($bloque);
+    }
+
+    public function actualizarBloque(Request $request, Bloque $bloque) {
+        $data = $request->validate([
+            'config' => 'sometimes|array',
+        ]);
+        $bloque->update($data);
+        return response()->json($bloque);
+    }
+
+    public function moverBloque(Request $request, Bloque $bloque) {
+        $data = $request->validate([
+            'pos_x' => 'required|numeric',
+            'pos_y' => 'required|numeric',
+        ]);
+        $bloque->update($data);
+        return response()->json($bloque);
+    }
+
+    public function eliminarBloque(Bloque $bloque) {
+        $bloque->delete();
+        return response()->json(['message' => 'Bloque eliminado']);
+    }
+
+    public function crearConexion(Request $request) {
+        $data = $request->validate([
+            'bloque_origen_id' => 'required|exists:bloques,id',
+            'bloque_destino_id' => 'required|exists:bloques,id',
+            'valor' => 'nullable|string',
+            'etiqueta' => 'nullable|string',
+        ]);
+        $conexion = BloqueConexion::create($data);
+        return response()->json($conexion);
+    }
+
+    public function eliminarConexion(BloqueConexion $conexion) {
+        $conexion->delete();
+        return response()->json(['message' => 'Conexión eliminada']);
+    }
 }

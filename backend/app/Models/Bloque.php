@@ -8,4 +8,6 @@ class Bloque extends Model {
     protected $casts = ['config' => 'array'];
 
     public function flujo() { return $this->belongsTo(Flujo::class); }
+    public function conexionesSalida() { return $this->hasMany(BloqueConexion::class, 'bloque_origen_id'); }
+    public function conexionesEntrada() { return $this->hasMany(BloqueConexion::class, 'bloque_destino_id'); }
 }

@@ -76,6 +76,7 @@ export default function Flujos() {
     .filter(f => f.nombre.toLowerCase().includes(busqueda.toLowerCase()))
     .filter(f => !carpetaActiva || f.carpeta_id === carpetaActiva.id)
   const carpetasVista = mostrarMas ? carpetas : carpetas.slice(0, 9)
+  const flujoBienvenida = flujos.find(f => f.nombre.toLowerCase().includes('bienvenida')) ?? flujos[0]
 
   const crearYAbrir = (nombre) => mutCrearDirecto.mutate({ nombre })
   const abrirBienvenida = () => {
@@ -197,7 +198,7 @@ export default function Flujos() {
               </span>
             </button>
 
-            {/* Flujos vacíos — borde punteado */}
+            {/* Flujos vacíos — borde punteado, crean el flujo y abren el editor */}
             {estandarVacios.map(nombre => (
               <div key={nombre} className="relative" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { setVacioPopover(vacioPopover === nombre ? null : nombre); setVacioModo(null) }}

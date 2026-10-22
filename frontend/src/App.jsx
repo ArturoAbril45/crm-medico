@@ -4,6 +4,8 @@ import Layout from './components/Layout'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Pacientes from './pages/Pacientes'
+import PacienteForm from './pages/PacienteForm'
+import PacienteDetalle from './pages/PacienteDetalle'
 import Citas from './pages/Citas'
 import Procedimientos from './pages/Procedimientos'
 import Flujos from './pages/Flujos'
@@ -55,6 +57,20 @@ function PrivateRoute({ children }) {
   return isAuth ? children : <Navigate to="/login" replace />
 }
 
+// Rutas con página real y modelo de datos propio ya construidos.
+const rutasExistentes = new Set([
+  'dashboard', 'pacientes', 'citas', 'procedimientos', 'campanhas', 'transmision',
+  'bandeja', 'automatizaciones', 'flujos', 'pagos', 'configuracion', 'modelos', 'perfil',
+  'clinica/medicos', 'clinica/departamentos', 'clinica/horarios', 'clinica/consultas',
+  'whatsapp/conectar', 'roles',
+])
+
+// Todo módulo del menú que todavía no tiene un modelo de datos propio se conecta
+// igual a persistencia real (crear/listar/editar/eliminar) vía la tabla genérica
+// `modulo_registros`, filtrada por su slug — ningún módulo queda "en construcción".
+const rutasGenericas = flatRoutes.filter(item => item.to && !rutasExistentes.has(item.to.slice(1)))
+const slugModulo = (to) => to.slice(1).replace(/\//g, '-')
+
 function AppRoutes() {
   const { isAuth } = useAuth()
   return (
@@ -65,6 +81,9 @@ function AppRoutes() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="pacientes" element={<Pacientes />} />
+        <Route path="pacientes/nuevo" element={<PacienteForm />} />
+        <Route path="pacientes/:id/editar" element={<PacienteForm />} />
+        <Route path="pacientes/:id" element={<PacienteDetalle />} />
         <Route path="citas" element={<Citas />} />
         <Route path="procedimientos" element={<Procedimientos />} />
         <Route path="campanhas" element={<Campanhas />} />
@@ -72,6 +91,7 @@ function AppRoutes() {
         <Route path="bandeja" element={<BandejaEntrada />} />
         <Route path="automatizaciones" element={<Automatizaciones />} />
         <Route path="flujos" element={<Flujos />} />
+        <Route path="flujos/:id/constructor" element={<FlujoConstructor />} />
         <Route path="pagos" element={<Pagos />} />
         <Route path="clinica/pacientes" element={<PacientesMedicos />} />
         <Route path="clinica/turnos" element={<Turnos />} />
@@ -109,6 +129,20 @@ function AppRoutes() {
         <Route path="modelos" element={<Modelos />} />
         <Route path="companias" element={<Companias />} />
         <Route path="perfil" element={<Perfil />} />
+        <Route path="clinica/medicos" element={<Medicos />} />
+        <Route path="clinica/departamentos" element={<Departamentos />} />
+        <Route path="clinica/horarios" element={<Horarios />} />
+        <Route path="clinica/consultas" element={<Consultas />} />
+        <Route path="whatsapp/conectar" element={<ConectarWhatsapp />} />
+        <Route path="roles" element={<Roles />} />
+
+        {rutasGenericas.map(item => (
+          <Route
+            key={item.to}
+            path={item.to.slice(1)}
+            element={<ModuloGenerico modulo={slugModulo(item.to)} label={item.label} icon={item.icon} />}
+          />
+        ))}
       </Route>
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

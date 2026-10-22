@@ -192,6 +192,43 @@ function PerfilMenu({ colapsado, onNavigate }) {
   const btnRef = useRef(null)
   const { session, logout } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const navRef = useRef(null)
+  const notifRef = useRef(null)
+
+  const hoy = new Date().toISOString().slice(0, 10)
+  const { data: citasHoyData } = useQuery({
+    queryKey: ['notif-citas-hoy'],
+    queryFn: () => getCitas({ fecha: hoy, estado: 'pendiente', per_page: 5 }).then(r => r.data),
+    refetchInterval: 60000,
+  })
+  const { data: conversacionesData } = useQuery({
+    queryKey: ['notif-conversaciones'],
+    queryFn: () => getConversaciones().then(r => r.data),
+    refetchInterval: 15000,
+  })
+  const citasHoy = citasHoyData?.data ?? []
+  const conversaciones = Array.isArray(conversacionesData) ? conversacionesData : []
+  const mensajesSinLeer = conversaciones.filter(c => c.no_leidos > 0)
+  const totalNotificaciones = citasHoy.length + mensajesSinLeer.length
+
+  useEffect(() => { setOpenGroup(null); setMobileOpen(false) }, [location.pathname])
+
+  useEffect(() => {
+    function onClickOutsideNotif(e) {
+      if (notifRef.current && !notifRef.current.contains(e.target)) setNotifMenu(false)
+    }
+    document.addEventListener('mousedown', onClickOutsideNotif)
+    return () => document.removeEventListener('mousedown', onClickOutsideNotif)
+  }, [])
+
+  useEffect(() => {
+    function onClickOutside(e) {
+      if (navRef.current && !navRef.current.contains(e.target)) setOpenGroup(null)
+    }
+    document.addEventListener('mousedown', onClickOutside)
+    return () => document.removeEventListener('mousedown', onClickOutside)
+  }, [])
 
   const initiales = (session?.nombre ?? 'U').split(' ').map(w => w[0]).slice(0, 2).join('')
   const cambiarEstado = (nuevo) => { setEstado(nuevo); localStorage.setItem('estado_presencia', nuevo) }
@@ -253,6 +290,30 @@ function PerfilMenu({ colapsado, onNavigate }) {
       </button>
     </>
   )
+
+  // permisos === null/undefined significa acceso completo (rol Administrador
+  // o cualquier usuario sin restricciones marcadas en Roles y Usuarios).
+  const SIEMPRE_PERMITIDAS = ['/dashboard', '/perfil']
+  const permisos = session?.permisos ?? null
+  const tienePermiso = (to) => !permisos || SIEMPRE_PERMITIDAS.includes(to) || permisos.includes(to)
+
+  const navGroupsVisibles = useMemo(() => {
+    if (!permisos) return navGroups
+    return navGroups
+      .map(grupo => {
+        if (!grupo.items) return tienePermiso(grupo.to) ? grupo : null
+        const items = grupo.items.filter(it => tienePermiso(it.to))
+        return items.length > 0 ? { ...grupo, items } : null
+      })
+      .filter(Boolean)
+  }, [permisos])
+
+  useEffect(() => {
+    if (!permisos) return
+    const rutasPermitidas = [...SIEMPRE_PERMITIDAS, ...permisos]
+    const permitido = rutasPermitidas.some(r => location.pathname === r || location.pathname.startsWith(r + '/'))
+    if (!permitido) navigate('/dashboard', { replace: true })
+  }, [location.pathname, permisos])
 
   return (
     <>

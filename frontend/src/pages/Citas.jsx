@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import ModuleLoader from '../components/ModuleLoader'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { getCitas, createCita, updateCita, deleteCita, getPacientes, getProcedimientos } from '../services/api'
+import { getCitas, createCita, updateCita, deleteCita, getPacientes, getProcedimientos, getMedicos } from '../services/api'
 import { Plus, Pencil, Trash2, Calendar, Clock, ChevronLeft, ChevronRight } from 'lucide-react'
 import Modal from '../components/Modal'
 
@@ -13,7 +13,8 @@ const estadoColors = {
   no_asistio: 'bg-slate-100 text-slate-500 border-slate-200',
 }
 
-const emptyForm = { paciente_id: '', procedimiento_id: '', doctor: 'Dr. Ramón Rojas', fecha_hora: '', duracion_min: 30, estado: 'pendiente', monto: '', notas: '' }
+const emptyForm = { paciente_id: '', procedimiento_id: '', medico_id: '', fecha_hora: '', duracion_min: 30, tipo_consulta: 'presencial', ubicacion: '', motivo: '', estado: 'pendiente', monto: '', notas: '' }
+const tipoConsultaLabels = { presencial: 'Presencial', virtual: 'Virtual', domicilio: 'A domicilio' }
 
 function fmt(dt) {
   if (!dt) return ''
@@ -52,6 +53,7 @@ export default function Citas() {
 
   const { data: pacientesData } = useQuery({ queryKey: ['pacientes-select'], queryFn: () => getPacientes({ per_page: 999 }).then(r => r.data) })
   const { data: procsData } = useQuery({ queryKey: ['procedimientos'], queryFn: () => getProcedimientos().then(r => r.data) })
+  const { data: medicosData } = useQuery({ queryKey: ['medicos'], queryFn: () => getMedicos().then(r => r.data) })
 
   const mutCreate = useMutation({ mutationFn: createCita, onSuccess: () => { qc.invalidateQueries(['citas']); setModal(null) } })
   const mutUpdate = useMutation({ mutationFn: ({ id, data }) => updateCita(id, data), onSuccess: () => { qc.invalidateQueries(['citas']); setModal(null) } })
@@ -60,11 +62,12 @@ export default function Citas() {
   const citas = Array.isArray(citasData?.data) ? citasData.data : (Array.isArray(citasData) ? citasData : [])
   const pacientes = pacientesData?.data ?? []
   const procs = Array.isArray(procsData) ? procsData : []
+  const medicos = Array.isArray(medicosData) ? medicosData : []
 
   const openNew = () => { setForm(emptyForm); setModal('nuevo') }
   const openEdit = (c) => {
     const fh = c.fecha_hora ? c.fecha_hora.slice(0, 16) : ''
-    setForm({ ...c, fecha_hora: fh, procedimiento_id: c.procedimiento_id ?? '', notas: c.notas ?? '' })
+    setForm({ ...c, fecha_hora: fh, procedimiento_id: c.procedimiento_id ?? '', medico_id: c.medico_id ?? '', tipo_consulta: c.tipo_consulta ?? 'presencial', ubicacion: c.ubicacion ?? '', motivo: c.motivo ?? '', notas: c.notas ?? '' })
     setModal(c)
   }
   const handleSubmit = (e) => {
@@ -149,7 +152,7 @@ export default function Citas() {
                     <td className="px-5 py-3 font-medium text-slate-800">{c.paciente?.nombre} {c.paciente?.apellido}</td>
                     <td className="px-5 py-3 text-slate-500">{c.procedimiento?.nombre ?? 'Consulta'}</td>
                     <td className="px-5 py-3 text-slate-600">{fmt(c.fecha_hora)}</td>
-                    <td className="px-5 py-3 text-slate-500">{c.doctor}</td>
+                    <td className="px-5 py-3 text-slate-500">{c.medico?.nombre ?? c.doctor ?? '—'}</td>
                     <td className="px-5 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${estadoColors[c.estado]}`}>{c.estado}</span>
                     </td>
@@ -198,14 +201,27 @@ export default function Citas() {
                 <input type="number" value={form.duracion_min} onChange={e => set('duracion_min', e.target.value)} min={15} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
               </div>
               <div>
-                <label className="text-xs font-medium text-slate-600 block mb-1">Doctor</label>
-                <input value={form.doctor} onChange={e => set('doctor', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+                <label className="text-xs font-medium text-slate-600 block mb-1">Médico</label>
+                <select value={form.medico_id} onChange={e => set('medico_id', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                  <option value="">— Sin asignar —</option>
+                  {medicos.map(m => <option key={m.id} value={m.id}>{m.nombre}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 block mb-1">Tipo de Consulta</label>
+                <select value={form.tipo_consulta} onChange={e => set('tipo_consulta', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
+                  {Object.entries(tipoConsultaLabels).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 block mb-1">Ubicación / Consultorio</label>
+                <input value={form.ubicacion} onChange={e => set('ubicacion', e.target.value)} placeholder="ej. Consultorio 2" className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-600 block mb-1">Monto (Bs.)</label>
                 <input type="number" value={form.monto} onChange={e => set('monto', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
               </div>
-              <div>
+              <div className="col-span-2">
                 <label className="text-xs font-medium text-slate-600 block mb-1">Estado</label>
                 <select value={form.estado} onChange={e => set('estado', e.target.value)} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 bg-white">
                   {['pendiente', 'confirmada', 'realizada', 'cancelada', 'no_asistio'].map(o => <option key={o} value={o}>{o}</option>)}
@@ -213,7 +229,11 @@ export default function Citas() {
               </div>
             </div>
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Notas</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Motivo de la Visita</label>
+              <input value={form.motivo} onChange={e => set('motivo', e.target.value)} placeholder="Describe el motivo de la consulta..." className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-slate-600 block mb-1">Notas internas</label>
               <textarea value={form.notas} onChange={e => set('notas', e.target.value)} rows={2} className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300 resize-none" />
             </div>
             <div className="flex gap-3 pt-2">

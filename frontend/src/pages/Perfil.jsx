@@ -15,7 +15,7 @@ export default function Perfil() {
   const [showPass, setShowPass] = useState(false)
   const [form, setForm] = useState({
     nombre: session?.nombre ?? '',
-    email: session?.user === 'admin' ? 'admin@clinicasaopaulo.com' : 'doctor@clinicasaopaulo.com',
+    email: session?.user === 'admin' ? 'admin@medadvance360.com' : 'doctor@medadvance360.com',
     telefono: '+591 70000001',
     idioma: 'ES',
     password: '',

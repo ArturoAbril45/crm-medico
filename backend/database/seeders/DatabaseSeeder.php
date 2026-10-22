@@ -35,14 +35,14 @@ class DatabaseSeeder extends Seeder {
         foreach ($pacientes as $p) Paciente::create($p);
 
         // Flujos del sistema
-        $flujo1 = Flujo::create(['nombre' => 'BIENVENIDA A LA CLINICA SAO PAULO', 'descripcion' => 'Flujo de bienvenida con campaña Blefaroplastia', 'activo' => true, 'total_ejecuciones' => 305, 'total_conversiones' => 116]);
+        $flujo1 = Flujo::create(['nombre' => 'BIENVENIDA A MEDADVANCE360', 'descripcion' => 'Flujo de bienvenida con campaña Blefaroplastia', 'activo' => true, 'total_ejecuciones' => 305, 'total_conversiones' => 116]);
         Bloque::create(['flujo_id' => $flujo1->id, 'tipo' => 'inicio', 'pos_x' => 20, 'pos_y' => 300, 'config' => ['titulo' => 'Inicio']]);
-        Bloque::create(['flujo_id' => $flujo1->id, 'tipo' => 'contenido', 'pos_x' => 300, 'pos_y' => 130, 'config' => ['mensajes' => ["¡Hola! 👋 Bienvenida a Clínica São Paulo 💖", "Gracias por escribirnos. Con un 10% de descuento en Blefaroplastia.\n🔶Costo consulta: Bs.250\n📍Barrio el Molino, Tarija"]]]);
+        Bloque::create(['flujo_id' => $flujo1->id, 'tipo' => 'contenido', 'pos_x' => 300, 'pos_y' => 130, 'config' => ['mensajes' => ["¡Hola! 👋 Bienvenida a MedAdvance360 💖", "Gracias por escribirnos. Con un 10% de descuento en Blefaroplastia.\n🔶Costo consulta: Bs.250\n📍Barrio el Molino, Tarija"]]]);
         Bloque::create(['flujo_id' => $flujo1->id, 'tipo' => 'menu', 'pos_x' => 600, 'pos_y' => 150, 'config' => ['pregunta' => 'Para brindarte información personalizada, cuéntame qué tratamiento te interesa 👇', 'boton' => 'Ver Opciones', 'opciones' => ['Reduccion de Parpados 10% descuento', 'Otro procedimiento', 'Consulta al Doctor']]]);
 
         $flujo2 = Flujo::create(['nombre' => 'MES DE JUNIO RINOPLASTIA', 'descripcion' => 'Campaña Rinoplastia Ultrasónica 20% descuento', 'activo' => true, 'total_ejecuciones' => 293, 'total_conversiones' => 120]);
         Bloque::create(['flujo_id' => $flujo2->id, 'tipo' => 'inicio', 'pos_x' => 20, 'pos_y' => 350, 'config' => ['titulo' => 'Inicio']]);
-        Bloque::create(['flujo_id' => $flujo2->id, 'tipo' => 'contenido', 'pos_x' => 290, 'pos_y' => 100, 'config' => ['mensajes' => ["¡Hola! 👋 Bienvenida a Clínica São Paulo 💖", "Solo por Junio: Rinoplastia Ultrasónica con 20% de descuento.\n✅ Mayor precisión\n✅ Menos inflamación\n🔸 Consulta: Bs.250"]]]);
+        Bloque::create(['flujo_id' => $flujo2->id, 'tipo' => 'contenido', 'pos_x' => 290, 'pos_y' => 100, 'config' => ['mensajes' => ["¡Hola! 👋 Bienvenida a MedAdvance360 💖", "Solo por Junio: Rinoplastia Ultrasónica con 20% de descuento.\n✅ Mayor precisión\n✅ Menos inflamación\n🔸 Consulta: Bs.250"]]]);
         Bloque::create(['flujo_id' => $flujo2->id, 'tipo' => 'menu', 'pos_x' => 610, 'pos_y' => 170, 'config' => ['pregunta' => 'Selecciona la opción que te interesa', 'boton' => 'Ver Opciones', 'opciones' => ['VER PDF ANTES Y DESPUES', 'QUIERO AGENDAR MI CONSULTA', 'TENGO UNA DUDA']]]);
 
         // Automatizaciones
