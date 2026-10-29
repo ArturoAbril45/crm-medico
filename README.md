@@ -160,7 +160,15 @@ La integracion con WhatsApp se realiza a traves del servicio dedicado `whatsapp-
 
 ## Como levantarlo en local
 
-Requisitos: PHP 8.3, Composer, Node.js 18 o superior, y una base de datos (MySQL o SQLite).
+### Requisitos previos
+
+- PHP 8.3 o superior, con las extensiones habituales de Laravel (pdo_sqlite o pdo_mysql, mbstring, openssl, tokenizer, xml, ctype, json, bcmath).
+- Composer 2.x.
+- Node.js 18 o superior (recomendado 20+) con npm.
+- Una base de datos: SQLite (no requiere instalacion, es la opcion por defecto) o MySQL si se prefiere.
+- Un telefono con WhatsApp disponible para vincular (escanear el QR) durante las pruebas.
+
+Versiones concretas con las que esta armado el proyecto (ver `composer.json` y `package.json` de cada componente): Laravel ^13.17, React ^19.2, Vite ^8.2, React Router ^7.18, TanStack Query ^5.102, Baileys (@whiskeysockets/baileys) ^6.7.9, Express ^4.21.
 
 ### 1. Backend (Laravel)
 
@@ -176,6 +184,31 @@ php artisan serve
 
 Queda en `http://localhost:8000`.
 
+Variables del backend (`backend/.env`) que vienen en `.env.example`, ademas de las estandar de Laravel:
+
+- `APP_URL` — URL base del backend (por defecto `http://localhost:8000`).
+- `DB_CONNECTION` — motor de base de datos: `sqlite` (por defecto, no requiere configuracion adicional) o `mysql` (en cuyo caso se completan `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`).
+- `SESSION_DRIVER`, `QUEUE_CONNECTION`, `CACHE_STORE` — por defecto usan la propia base de datos (`database`), sin dependencias externas como Redis.
+
+Ademas, el codigo del backend lee otras variables que NO vienen listadas en `.env.example` pero que conviene agregar a mano en `backend/.env` segun lo que se necesite:
+
+- `WHATSAPP_SERVICE_URL` — URL donde el backend encuentra al servicio de WhatsApp (por defecto `http://localhost:3300`, usada por `App\Services\WhatsappClient`).
+- `WHATSAPP_SERVICE_TOKEN` — token compartido para autenticar las llamadas entre backend y servicio de WhatsApp; debe coincidir con `SERVICE_TOKEN` definido en `whatsapp-service/.env` (usada en `WhatsappClient` y en `WhatsappController` al validar el webhook entrante).
+- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI` — credenciales OAuth para la vinculacion de Medicos con Google Calendar (`App\Services\GoogleCalendarService`). Si no se configuran, esa integracion queda deshabilitada pero el resto del sistema funciona igual.
+- `APP_URL_FRONTEND` — URL del frontend, usada para construir enlaces (por ejemplo, el callback de Google Calendar). Si no se define, el codigo cae por defecto a `https://medadvance360.com`, por lo que en desarrollo conviene definirla como `http://localhost:5173`.
+
+La clave de API de IA (OpenAI/Anthropic) es la unica credencial relevante que no se configura por `.env`: se guarda desde el panel (Herramientas, WhatsApp AI Bot) directamente en la base de datos.
+
+Primer usuario y compañia: el sistema no tiene registro publico (no existe un endpoint de "crear cuenta"), asi que tras migrar una base de datos nueva hay que crear la primera compañia y el primer usuario administrador a mano, por ejemplo con Tinker:
+
+```
+php artisan tinker
+>>> $compania = App\Models\Compania::create(['nombre' => 'Mi Clinica', 'slug' => 'mi-clinica', 'activo' => true]);
+>>> App\Models\User::create(['name' => 'admin', 'email' => 'admin@ejemplo.com', 'password' => bcrypt('password'), 'activo' => true, 'es_super_admin' => true, 'compania_id' => $compania->id]);
+```
+
+Con ese usuario se puede iniciar sesion en el panel y, desde Administracion, crear roles, mas usuarios y compañias adicionales. El repositorio incluye ademas seeders de ejemplo (`database/seeders/`) con datos de demostracion, no pensados para una instalacion productiva nueva.
+
 ### 2. Frontend (React)
 
 ```
@@ -184,6 +217,8 @@ npm install
 (configurar VITE_API_URL apuntando al backend, por ejemplo http://localhost:8000/api)
 npm run dev
 ```
+
+Queda en `http://localhost:5173` (puerto por defecto de Vite). El propio `vite.config.js` ya redirige las peticiones a `/api` hacia `http://localhost:8000` durante el desarrollo, por lo que en local `VITE_API_URL` puede dejarse apuntando a esa misma ruta relativa o al backend directamente. El frontend no trae un `.env.example`; la unica variable que usa es `VITE_API_URL` (ver `frontend/.env.production` como referencia de formato, no se versiona por contener la URL del entorno real).
 
 ### 3. Servicio de WhatsApp (Node)
 
